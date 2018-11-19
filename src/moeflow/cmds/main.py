@@ -1,17 +1,27 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import cv2
 import logging
-import magic
 import os
+import pathlib
 import shutil
 import tempfile
-import tensorflow as tf
 import uuid
+
+import click
+import cv2
+import magic
+import tensorflow as tf
+
 from sanic import Sanic, response
 from moeflow.classify import classify_resized_face
 from moeflow.face_detect import run_face_detection
 from moeflow.jinja2_env import render
-from moeflow.util import resize_large_image, resize_faces, cleanup_image_cache
+from moeflow.util import (
+    cleanup_image_cache,
+    resize_faces,
+    resize_large_image,
+    sha256_checksum,
+)
 
 app = Sanic(__name__)
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -100,11 +110,22 @@ async def initialize(app, loop):
     logging.info("MoeFlow model is now initialized!")
 
 
-def main():
+@click.command()
+@click.option('--host', help='Host.')
+@click.option('--port', help='Port number.', type=int)
+@click.option(
+    '--log-level', help='Logging level.',
+    default='info', type=click.Choice(['info', 'debug']))
+def main(host, port, log_level):
     # Set logger
-    logging.basicConfig(level=logging.INFO)
-    app.run(host="0.0.0.0", port=8888)
+    logging.basicConfig(level=getattr(logging, log_level.upper()))
+    kwargs = {}
+    if host:
+        kwargs['host'] = host
+    if port:
+        kwargs['port'] = port
+    app.run(**kwargs)
+
 
 if __name__ == '__main__':
-    main_app()
-
+    main()
