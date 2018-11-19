@@ -34,8 +34,8 @@ ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
 @app.route("/", methods=['GET', 'POST'])
 async def main_app(request):
     if request.method == "POST":
-        uploaded_image  = request.files.get('uploaded_image')
-        mime_type =  magic.from_buffer(uploaded_image.body, mime=True)
+        uploaded_image = request.files.get('uploaded_image')
+        mime_type = magic.from_buffer(uploaded_image.body, mime=True)
         if mime_type not in ALLOWED_MIMETYPE:
             return response.html(render("main.html"))
         # Scale down input image to ~800 px
