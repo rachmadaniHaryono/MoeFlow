@@ -62,12 +62,24 @@ In [yande.re](https://yande.re/tag?name=&order=count&type=4), there are around 3
 Python Environment:
 
 ```
+$ git clone https://github.com/freedomofkeima/MoeFlow
+$ cd MoeFlow
 $ virtualenv -p python3 venv  # Ensure python3 version is 3.5, otherwise TensorFlow might not work
 $ . venv/bin/activate
+$ pip install .
+$ # install TensorFlow
+$ pip install .[tensorflow]
+$ # or
 $ pip install tensorflow==1.4.0
+$ # install python animeface (optional)
+$ pip install .[python_animeface]
+$ # if python-animeface raise patchelf error, download patchelf-wrapper to fix it(optional)
+$ pip install .[patchelf_wrapper]
 ```
 
-Since `nagadomi/animeface-2009` is an independent project, you need to clone it somewhere in your local directory. Note that the project requires Ruby, ImageMagick, and gcc to run.
+Since `nagadomi/animeface-2009` is an independent project and you want to use it,
+you need to clone it somewhere in your local directory.
+Note that the project requires Ruby, ImageMagick, and gcc to run.
 
 After you finish installing it, go to `detect.rb` and update the `require` part (line 4) accordingly.
 
@@ -75,15 +87,17 @@ After that, you need to download MoeFlow model via `models/download_model.sh` (~
 
 ## How to run
 
-After running steps above, you can simply run it by:
+After running steps above, you simply run.
+On this example we will run with
+model path on `/path/to/MoeFlow/models`, host `127.0.0.1` and port 5008
 
 ```
 $ export MOEFLOW_MODEL_PATH='/path/to/MoeFlow/models'
-$ pip install -e .
-$ app
+$ moeflow --port 5008 --host 127.0.0.1
 ```
 
-If your application is configured to run in a relative path, e.g.: [https://freedomofkeima.com/moeflow/](https://freedomofkeima.com/moeflow/), then you can set static URL path via `export MOEFLOW_RELATIVE_URL_PATH='/moeflow/'`.
+If your application is configured to run in a relative path, e.g.: [https://freedomofkeima.com/moeflow/](https://freedomofkeima.com/moeflow/),
+then you can set static URL path via `export MOEFLOW_RELATIVE_URL_PATH='/moeflow/'`.
 
 ## License
 
