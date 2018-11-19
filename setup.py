@@ -17,7 +17,7 @@ requires = [
 ]
 
 console_scripts = [
-    'app = moeflow.cmds.main:main',
+    'moeflow = moeflow.cmds.main:main',
 ]
 
 setup(
@@ -40,7 +40,10 @@ setup(
     ],
     entry_points={'console_scripts': console_scripts},
     extras_require={
-        'tests': ['pytest', 'pytest-cov', 'pytest-sugar']
+        'tests': ['pytest', 'pytest-cov', 'pytest-sugar'],
+        'patchelf_wrapper': ['patchelf-wrapper==1.0.4'],
+        'tensorflow': ['tensorflow==1.4.0'],
+        'python_animeface': ['git+git://github.com/nya3jp/python-animeface.git'],
     },
     zip_safe=False
 )
