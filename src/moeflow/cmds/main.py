@@ -94,7 +94,7 @@ async def hello_world(request):
 
 @app.listener('before_server_start')
 async def initialize(app, loop):
-    moeflow_path = os.environ.get('MOEFLOW_MODEL_PATH')
+    moeflow_path = os.environ.get('MOEFLOW_MODEL_PATH') or ''
     label_path = os.path.join(os.sep, moeflow_path, "output_labels_2.txt")
     model_path = os.path.join(os.sep, moeflow_path, "output_graph_2.pb")
     app.label_lines = [
