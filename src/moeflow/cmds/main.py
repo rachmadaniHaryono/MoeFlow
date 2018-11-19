@@ -113,17 +113,17 @@ async def initialize(app, loop):
 @click.command()
 @click.option('--host', help='Host.')
 @click.option('--port', help='Port number.', type=int)
-@click.option(
-    '--log-level', help='Logging level.',
-    default='info', type=click.Choice(['info', 'debug']))
-def main(host, port, log_level):
+@click.option('--debug', help='Run debugging.', is_flag=True)
+def main(host, port, debug):
     # Set logger
-    logging.basicConfig(level=getattr(logging, log_level.upper()))
+    logging.basicConfig(level=logging.DEBUG if not debug else logging.INFO)
     kwargs = {}
     if host:
         kwargs['host'] = host
     if port:
         kwargs['port'] = port
+    if debug:
+        kwargs['debug'] = debug
     app.run(**kwargs)
 
 
