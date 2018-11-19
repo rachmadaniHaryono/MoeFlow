@@ -5,7 +5,6 @@ import os
 import pathlib
 import shutil
 import tempfile
-import uuid
 
 import click
 import cv2
@@ -45,10 +44,11 @@ async def main_app(request):
             logging.info("Input file is created at {}".format(filename))
             cv2.imwrite(filename, image)
             # Copy to image directory
-            ori_name = uuid.uuid4().hex + ".jpg"
-            shutil.copyfile(filename, os.path.join(
-                static_path, 'images', ori_name
-            ))
+            csm = sha256_checksum(filename)
+            ori_name = csm + ".jpg"
+            ori_path = os.path.join(static_path, 'images', ori_name[:2], ori_name)
+            pathlib.Path(os.path.dirname(ori_path)).mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(filename, ori_path)
             results = []
             # Run face detection with animeface-2009
             detected_faces = run_face_detection(filename)
@@ -63,10 +63,13 @@ async def main_app(request):
                     app.label_lines,
                     app.graph
                 )
-                face_name = uuid.uuid4().hex + ".jpg"
-                shutil.copyfile(face, os.path.join(
-                    static_path, 'images', face_name
-                ))
+                face_name = sha256_checksum(face) + ".jpg"
+                face_name_path = os.path.join(
+                    static_path, 'images', face_name[:2], face_name)
+                pathlib.Path(
+                    os.path.dirname(face_name_path)
+                ).mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(face, face_name_path)
                 results.append({
                     "image_name": face_name,
                     "prediction": predictions
