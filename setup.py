@@ -8,7 +8,7 @@ requires = [
     'jinja2==2.10',
     'MarkupSafe==1.0',
     'numpy==1.13.3',
-    'opencv-python==3.3.0.10',
+    'opencv-python==3.4.3.18',
     'python-magic==0.4.13',
     'sanic==0.6.0',
     'ujson==1.35',
