@@ -64,18 +64,9 @@ def predict(filename, config=None):
         })
     # prepare graph and label_lines instance
     if not res['config']['graph'] and not res['config']['label_lines']:
-        label_path = res['config']['label_path']
-        model_path = res['config']['model_path']
-        res['config']['label_lines'] = [
-            line.strip() for line in tf.gfile.GFile(label_path)
-        ]
-        graph = tf.Graph()
-        graph_def = tf.GraphDef()
-        with tf.gfile.FastGFile(model_path, 'rb') as f:
-            graph_def.ParseFromString(f.read())
-        with graph.as_default():
-            tf.import_graph_def(graph_def, name='')
-        res['config']['graph'] = graph
+        res['config']['graph'], res['config']['label_lines'] = \
+            get_graph_and_label_lines(
+                res['config']['model_path'], res['config']['label_path'])
     # predict each face
     label_lines = res['config']['label_lines']
     graph = res['config']['graph']
@@ -97,6 +88,19 @@ def predict(filename, config=None):
             {'method': predict_method_name, 'value': x[0], 'confidence': x[1]}
             for x in predictions]
     return res
+
+
+def get_graph_and_label_lines(model_path, label_path):
+    label_lines = [
+        line.strip() for line in tf.gfile.GFile(label_path)
+    ]
+    graph = tf.Graph()
+    graph_def = tf.GraphDef()
+    with tf.gfile.FastGFile(model_path, 'rb') as f:
+        graph_def.ParseFromString(f.read())
+    with graph.as_default():
+        tf.import_graph_def(graph_def, name='')
+    return graph, label_lines
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -169,16 +173,7 @@ async def initialize(app, loop):
     moeflow_path = os.environ.get('MOEFLOW_MODEL_PATH', '')
     label_path = os.path.join(os.sep, moeflow_path, "output_labels_2.txt")
     model_path = os.path.join(os.sep, moeflow_path, "output_graph_2.pb")
-    app.label_lines = [
-        line.strip() for line in tf.gfile.GFile(label_path)
-    ]
-    graph = tf.Graph()
-    graph_def = tf.GraphDef()
-    with tf.gfile.FastGFile(model_path, 'rb') as f:
-        graph_def.ParseFromString(f.read())
-    with graph.as_default():
-        tf.import_graph_def(graph_def, name='')
-    app.graph = graph
+    app.graph, app.label_lines = get_graph_and_label_lines(model_path, label_path)
     logging.info("MoeFlow model is now initialized!")
 
 
