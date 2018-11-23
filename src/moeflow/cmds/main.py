@@ -6,15 +6,17 @@ import pathlib
 import shutil
 import tempfile
 
+import animeface
 import click
 import cv2
 import magic
+import PIL.Image
 import tensorflow as tf
-
-from sanic import Sanic, response
+from appdirs import user_data_dir
 from moeflow.classify import classify_resized_face
 from moeflow.face_detect import run_face_detection
 from moeflow.jinja2_env import render
+from sanic import Sanic, response
 from moeflow.util import (
     cleanup_image_cache,
     resize_faces,
@@ -22,12 +24,79 @@ from moeflow.util import (
     sha256_checksum,
 )
 
+
+DATA_DIR = user_data_dir('MoeFlow', 'Iskandar Setiadi')
 app = Sanic(__name__)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 static_path = os.path.join(dir_path, '..', 'static')
 app.static('/static', static_path)
+app.static('/i', os.path.join(DATA_DIR, 'image'))
+pathlib.Path(os.path.join(DATA_DIR, 'image')).mkdir(parents=True, exist_ok=True)
 
 ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
+
+
+def predict(filename, config=None):
+    width, height = 96, 96
+    predict_method_name = 'moeflow'
+    detector_name = 'python_animeface'
+    pil_img = PIL.Image.open(filename)
+    cv2_img = cv2.imread(filename)
+    res = {
+        'filename': filename,
+        'pil_img': pil_img, 'cv2_img': cv2_img,
+        'faces': [],
+        'config': {'graph': None, 'label_lines': None}}
+    if config is not None:
+        res['config'].update(config)
+    # detect face with python anime_face
+    af_faces = animeface.detect(pil_img)
+    valid_color_attrs = ['skin', 'hair', 'left_eye', 'right_eye']
+    for idx, ff in enumerate(af_faces):
+        res['faces'].append({
+            'idx': idx,
+            'detector': detector_name,
+            'pos': ff.face.pos,
+            'likelihood': ff.likelihood,
+            'colors': {
+                key: value.color for key, value in vars(ff).items()
+                if key in valid_color_attrs}
+        })
+    # prepare graph and label_lines instance
+    if not res['config']['graph'] and not res['config']['label_lines']:
+        label_path = res['config']['label_path']
+        model_path = res['config']['model_path']
+        res['config']['label_lines'] = [
+            line.strip() for line in tf.gfile.GFile(label_path)
+        ]
+        graph = tf.Graph()
+        graph_def = tf.GraphDef()
+        with tf.gfile.FastGFile(model_path, 'rb') as f:
+            graph_def.ParseFromString(f.read())
+        with graph.as_default():
+            tf.import_graph_def(graph_def, name='')
+        res['config']['graph'] = graph
+    # predict each face
+    label_lines = res['config']['label_lines']
+    graph = res['config']['graph']
+    for idx, face in enumerate(res['faces']):
+        pos = face['pos']
+        crop_img = cv2_img[pos.y:pos.y+pos.height, pos.x:pos.x+pos.width]
+        resized_img = cv2.resize(
+            crop_img,
+            (width, height),
+            interpolation=cv2.INTER_AREA
+        )
+        resized_path = None
+        with tempfile.NamedTemporaryFile(delete=False) as temp_ff:
+            resized_path = temp_ff.name + '.jpg'
+            cv2.imwrite(temp_ff.name + '.jpg', resized_img)
+        res['faces'][idx]['resized_path'] = temp_ff.name
+        predictions = classify_resized_face(resized_path, label_lines, graph)
+        res['faces'][idx]['predictions'] = [
+            {'method': predict_method_name, 'value': x[0], 'confidence': x[1]}
+            for x in predictions]
+    return res
 
 
 @app.route("/", methods=['GET', 'POST'])
