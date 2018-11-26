@@ -12,11 +12,12 @@ import cv2
 import magic
 import PIL.Image
 import tensorflow as tf
-from appdirs import user_data_dir
+from sanic import Sanic, response
+
+from moeflow.models import IMAGE_DIR
 from moeflow.classify import classify_resized_face
 from moeflow.face_detect import run_face_detection
 from moeflow.jinja2_env import render
-from sanic import Sanic, response
 from moeflow.util import (
     cleanup_image_cache,
     resize_faces,
@@ -25,13 +26,12 @@ from moeflow.util import (
 )
 
 
-DATA_DIR = user_data_dir('MoeFlow', 'Iskandar Setiadi')
 app = Sanic(__name__)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 static_path = os.path.join(dir_path, '..', 'static')
 app.static('/static', static_path)
-app.static('/i', os.path.join(DATA_DIR, 'image'))
-pathlib.Path(os.path.join(DATA_DIR, 'image')).mkdir(parents=True, exist_ok=True)
+app.static('/i', IMAGE_DIR)
+pathlib.Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
 
 ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
 
@@ -40,10 +40,13 @@ def predict(filename, config=None, db_session=None):
     width, height = 96, 96
     predict_method_name = 'moeflow'
     detector_name = 'python_animeface'
-    if db_session is not None:
-        raise NotImplementedError
     pil_img = PIL.Image.open(filename)
     cv2_img = cv2.imread(filename)
+    #  created = True
+    if db_session is not None:
+        #  c_model, created = models.add_image(db_session, filename, pil_img, IMAGE_DIR)
+        #  db_session.commit()
+        raise NotImplementedError
     res = {
         'filename': filename,
         'pil_img': pil_img, 'cv2_img': cv2_img,

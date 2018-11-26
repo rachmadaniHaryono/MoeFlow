@@ -1,8 +1,18 @@
+import shutil
+import os
+
+from appdirs import user_data_dir
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table, Float
-from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy_utils import ColorType
 from sqlalchemy_utils.models import Timestamp
+
+from moeflow.util import sha256_checksum
+
+
+DATA_DIR = user_data_dir('MoeFlow', 'Iskandar Setiadi')
+IMAGE_DIR = os.path.join(DATA_DIR, 'image')
 
 
 Base = declarative_base()
@@ -33,7 +43,7 @@ face_prediction_tags = Table(
 )
 
 
-class BaseModel(Base, Timestamp):
+class BaseModel(Base, Timestamp):  # type: ignore
     __abstract__ = True
     id = Column(Integer, primary_key=True)
 
@@ -93,3 +103,34 @@ class ColorTag(BaseModel):
     __tablename__ = 'color_tag'
     value = Column(String)
     color_value = Column(ColorType)
+
+
+def get_or_create(session, model, **kwargs):
+    """Creates an object or returns the object if exists."""
+    instance = session.query(model).filter_by(**kwargs).first()
+    created = False
+    if not instance:
+        instance = model(**kwargs)
+        session.add(instance)
+        created = True
+    return instance, created
+
+
+def add_image(db_session, filename, pil_image=None, image_dir=None):
+    """add image to database."""
+    checksum = sha256_checksum(filename)
+    c_model, created = get_or_create(
+        db_session, Checksum, value=checksum)
+    if not created:
+        raise NotImplementedError
+    c_model.ext = pil_image.format.lower()
+    c_model.width, c_model.height = pil_image.size
+    c_model.trash = False
+    if image_dir is not None:
+        shutil.copyfile(
+            filename,
+            os.path.join(
+                image_dir, checksum[:2],
+                '{}.{}'.format(c_model.value, c_model.ext)))
+    db_session.add(c_model)
+    return c_model, created
