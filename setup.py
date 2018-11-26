@@ -4,6 +4,7 @@ from setuptools import find_packages, setup
 requires = [
     'aiofiles==0.3.2',
     'attrs==17.4.0',
+    'colour==0.1.5',
     'httptools==0.0.9',
     'jinja2==2.10',
     'MarkupSafe==1.0',
@@ -11,6 +12,8 @@ requires = [
     'opencv-python==3.4.3.18',
     'python-magic==0.4.13',
     'sanic==0.6.0',
+    'SQLAlchemy-Utils>=0.33.8',
+    'SQLAlchemy>=1.2.14',
     'ujson==1.35',
     'uvloop==0.8.1',
     'websockets==4.0.1',
