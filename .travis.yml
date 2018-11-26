@@ -1,0 +1,12 @@
+language: python
+python:
+  - "3.6"
+# command to install dependencies
+install:
+  - pip install -e . --process-dependency-links 
+  - pip install -e .[tests]
+  - pip install -e .[tensorflow]
+# command to run tests
+script:
+  - ./models/download_model.sh
+  - pytest

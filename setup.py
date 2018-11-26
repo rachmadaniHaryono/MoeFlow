@@ -3,7 +3,10 @@ from setuptools import find_packages, setup
 
 requires = [
     'aiofiles==0.3.2',
+    'animeface',
+    'appdirs==1.4.3',
     'attrs==17.4.0',
+    'Click>=7.0',
     'colour==0.1.5',
     'httptools==0.0.9',
     'jinja2==2.10',
@@ -36,6 +39,9 @@ setup(
         '': 'src'
     },
     install_requires=requires,
+    #  NOTE: for dependency_links
+    #  https://github.com/pypa/pip/issues/3610#issuecomment-356687173
+    dependency_links=['http://github.com/nya3jp/python-animeface/tarball/master#egg=animeface-1.1.0'],  # NOQA
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3.5",
@@ -46,9 +52,6 @@ setup(
         'tests': ['pytest', 'pytest-cov', 'pytest-sugar'],
         'patchelf_wrapper': ['patchelf-wrapper==1.0.4', ],
         'tensorflow': ['tensorflow==1.4.0', ],
-        'python_animeface': [
-            'python-animeface@'
-            'https://github.com/nya3jp/python-animeface/archive/master.zip', ],
     },
     zip_safe=False
 )
