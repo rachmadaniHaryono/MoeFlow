@@ -36,10 +36,12 @@ pathlib.Path(os.path.join(DATA_DIR, 'image')).mkdir(parents=True, exist_ok=True)
 ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
 
 
-def predict(filename, config=None):
+def predict(filename, config=None, db_session=None):
     width, height = 96, 96
     predict_method_name = 'moeflow'
     detector_name = 'python_animeface'
+    if db_session is not None:
+        raise NotImplementedError
     pil_img = PIL.Image.open(filename)
     cv2_img = cv2.imread(filename)
     res = {
