@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import hashlib
 import logging
-import math
 import os
 import time
 

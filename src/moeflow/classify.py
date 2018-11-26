@@ -6,7 +6,7 @@ import tensorflow as tf
 def read_tensor_from_image_file(file_name, input_height=299, input_width=299,
                                 input_mean=0, input_std=255):
     input_name = "file_reader"
-    output_name = "normalized"
+    #  output_name = "normalized"
     file_reader = tf.read_file(file_name, input_name)
     image_reader = tf.image.decode_jpeg(
         file_reader,
@@ -46,4 +46,3 @@ def classify_resized_face(file_name, label_lines, graph):
             score = predictions[0][node_id]
             results.append((human_string, score))
     return results
-
