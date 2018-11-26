@@ -50,7 +50,7 @@ setup(
     entry_points={'console_scripts': console_scripts},
     extras_require={
         'tests': [
-            'pytest', 'pytest-cov', 'pytest-sugar',
+            'pytest>=4.0.0', 'pytest-cov', 'pytest-sugar',
             'pytest-asyncio>=0.9.0',  'pytest-flake8>=1.0.2',
         ],
         'patchelf_wrapper': ['patchelf-wrapper==1.0.4', ],
