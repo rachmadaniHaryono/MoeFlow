@@ -42,5 +42,6 @@ def test_predict_with_db(graph_and_label_lines):
     Session = sessionmaker(bind=engine)
     db_session = Session()
     models.Base.metadata.create_all(engine)
-    res = predict('screenshots/altered_2_characters.png', config, db_session)
-    assert res
+    with pytest.raises(NotImplementedError):
+        predict('screenshots/altered_2_characters.png', config, db_session)
+    #  assert res
