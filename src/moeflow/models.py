@@ -39,6 +39,7 @@ class BaseModel(Base, Timestamp):
 
 
 class Checksum(BaseModel):
+    __tablename__ = 'checksum'
     value = Column(String, unique=True)
     ext = Column(String)
     trash = Column(Boolean, default=False)
@@ -48,6 +49,7 @@ class Checksum(BaseModel):
 
 
 class Face(BaseModel):
+    __tablename__ = 'face'
     checksum_id = Column(Integer, ForeignKey('checksum.id'))
     checksum = relationship("Checksum", back_populates="faces", foreign_keys=checksum_id)
     resized_checksum_id = Column(Integer, ForeignKey('checksum.id'))
@@ -63,6 +65,7 @@ class Face(BaseModel):
 
 
 class FacePrediction(BaseModel):
+    __tablename__ = 'face_prediction'
     face_id = Column(Integer, ForeignKey('face.id'))
     face = relationship("Face", back_populates="predictions", foreign_keys=face_id)
     method = Column(String)
@@ -71,6 +74,7 @@ class FacePrediction(BaseModel):
 
 
 class Tag(BaseModel):
+    __tablename__ = 'tag'
     value = Column(String)
     namespace_id = Column(Integer, ForeignKey('namespace.id'))
     namespace = relationship(
@@ -81,9 +85,11 @@ class Tag(BaseModel):
 
 
 class Namespace(BaseModel):
+    __tablename__ = 'namespace'
     value = Column(String)
 
 
 class ColorTag(BaseModel):
+    __tablename__ = 'color_tag'
     value = Column(String)
     color_value = Column(ColorType)
