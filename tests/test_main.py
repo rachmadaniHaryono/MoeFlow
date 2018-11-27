@@ -39,6 +39,7 @@ def test_predict_with_db(graph_and_label_lines):
     config = {'graph': graph, 'label_lines': label_lines}
     # db session
     engine = create_engine('sqlite:///:memory:')
+
     Session = sessionmaker(bind=engine)
     db_session = Session()
     models.Base.metadata.create_all(engine)
@@ -55,3 +56,24 @@ def test_get_faces():
     assert res[0][0]
     assert not res[0][1]
     assert len(res) == 4
+
+
+def test_get_faces_with_db():
+    import PIL.Image
+
+    from moeflow.cmds.main import get_faces
+    from moeflow import models
+    engine = create_engine('sqlite://')
+    models.Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+    db_session = Session()
+    filename = 'screenshots/altered_2_characters.png'
+    img = PIL.Image.open(filename)
+    c_model, created = models.add_image(db_session, filename, pil_image=img)
+    assert created
+    res = list(get_faces(img, db_session, c_model))
+    assert res[0][0]
+    assert len(res) == 4
+    assert res[0][1]
+    assert res[0][1].color_tags
+    db_session.commit()

@@ -40,20 +40,52 @@ ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
 def get_faces(img, db_session=None, c_model=None):
     detector_name = 'python_animeface'
     valid_color_attrs = ['skin', 'hair', 'left_eye', 'right_eye']
+    create_a_new_face_model = False
     af_faces = animeface.detect(img)
-    for idx, ff in enumerate(af_faces):
+    for ff in af_faces:
         face_model = None
+        pos = vars(ff.face.pos)  # NOQA
+        color_tags = {
+            key: value.color for key, value in vars(ff).items()
+            if key in valid_color_attrs}
         face_dict = {
-            'idx': idx,
             'detector': detector_name,
             'pos': ff.face.pos,
             'likelihood': ff.likelihood,
-            'colors': {
-                key: value.color for key, value in vars(ff).items()
-                if key in valid_color_attrs}
+            'colors': color_tags,
         }
-        if db_session and c_model:
-            raise NotImplementedError
+        if db_session and c_model and c_model.faces:
+            # search any existing faces
+            for ff_model in c_model.faces:
+                same_coordinate = [x for x in pos.values()] == list(ff_model.pos())
+                if same_coordinate and ff_model.method == detector_name:
+                    face_model = ff_model
+                    break
+            #  update or create face_model
+            if face_model:
+                # # update existing face
+                raise NotImplementedError
+            else:
+                create_a_new_face_model = True
+        elif db_session and c_model:
+            create_a_new_face_model = True
+        if create_a_new_face_model:
+            face_model = models.Face(
+                checksum=c_model, method=detector_name, likelihood=ff.likelihood)
+            for key, value in pos.items():
+                setattr(face_model, 'pos_{}'.format(key), value)
+            for key, value in color_tags.items():
+                def clamp(x):
+                    return max(0, min(x, 255))
+                color_value = \
+                    "#{0:02x}{1:02x}{2:02x}".format(
+                        clamp(value.r), clamp(value.g), clamp(value.b))
+
+                color_m, _ = models.get_or_create(
+                    db_session, models.ColorTag, value=key, color_value=color_value)
+                face_model.color_tags.append(color_m)
+                db_session.add(color_m)
+            db_session.add(face_model)
         yield [face_dict, face_model]
 
 
