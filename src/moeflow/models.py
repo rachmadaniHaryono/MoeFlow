@@ -68,12 +68,23 @@ class Face(BaseModel):
     resized_checksum = relationship(
         "Checksum", backref="face_models", foreign_keys=resized_checksum_id)
     method = Column(String)
+    likelihood = Column(Float)
     pos_x = Column(Integer)
     pos_y = Column(Integer)
-    pos_w = Column(Integer)
-    pos_h = Column(Integer)
-    colors = relationship('ColorTag', secondary=face_color_tags, backref='faces')
+    pos_width = Column(Integer)
+    pos_height = Column(Integer)
+    color_tags = relationship('ColorTag', secondary=face_color_tags, backref='faces')
     tags = relationship('Tag', secondary=face_tags, backref='faces')
+
+    def pos(self):
+        return (self.pos_x, self.pos_y, self.pos_width, self.pos_height)
+
+    def __repr__(self):
+        return 'Face(id={}, checksum={}, method={}, likelihood={}, pos={})'.format(
+            self.id, self.checksum.value[:7], self.method, self.likelihood,
+            '({}, {};{}, {})'.format(
+                self.pos_x, self.pos_y, self.pos_width, self.pos_height)
+        )
 
 
 class FacePrediction(BaseModel):
@@ -125,6 +136,10 @@ class ColorTag(BaseModel):
     __tablename__ = 'color_tag'
     value = Column(String)
     color_value = Column(ColorType)
+
+    def __repr__(self):
+        return 'ColorTag(id={}, value={}, color_value={})'.format(
+            self.id, self.value, self.color_value)
 
 
 def get_or_create(session, model, **kwargs):
