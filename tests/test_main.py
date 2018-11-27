@@ -42,6 +42,16 @@ def test_predict_with_db(graph_and_label_lines):
     Session = sessionmaker(bind=engine)
     db_session = Session()
     models.Base.metadata.create_all(engine)
-    with pytest.raises(NotImplementedError):
-        predict('screenshots/altered_2_characters.png', config, db_session)
-    #  assert res
+    res = predict('screenshots/altered_2_characters.png', config, db_session)
+    assert res
+
+
+def test_get_faces():
+    import PIL.Image
+
+    from moeflow.cmds.main import get_faces
+    img = PIL.Image.open('screenshots/altered_2_characters.png')
+    res = list(get_faces(img))
+    assert res[0][0]
+    assert not res[0][1]
+    assert len(res) == 4

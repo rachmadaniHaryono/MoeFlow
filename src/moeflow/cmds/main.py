@@ -14,6 +14,7 @@ import PIL.Image
 import tensorflow as tf
 from sanic import Sanic, response
 
+from moeflow import models
 from moeflow.models import IMAGE_DIR
 from moeflow.classify import classify_resized_face
 from moeflow.face_detect import run_face_detection
@@ -36,29 +37,13 @@ pathlib.Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
 ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
 
 
-def predict(filename, config=None, db_session=None):
-    width, height = 96, 96
-    predict_method_name = 'moeflow'
+def get_faces(img, db_session=None, c_model=None):
     detector_name = 'python_animeface'
-    pil_img = PIL.Image.open(filename)
-    cv2_img = cv2.imread(filename)
-    #  created = True
-    if db_session is not None:
-        #  c_model, created = models.add_image(db_session, filename, pil_img, IMAGE_DIR)
-        #  db_session.commit()
-        raise NotImplementedError
-    res = {
-        'filename': filename,
-        'pil_img': pil_img, 'cv2_img': cv2_img,
-        'faces': [],
-        'config': {'graph': None, 'label_lines': None}}
-    if config is not None:
-        res['config'].update(config)
-    # detect face with python anime_face
-    af_faces = animeface.detect(pil_img)
     valid_color_attrs = ['skin', 'hair', 'left_eye', 'right_eye']
+    af_faces = animeface.detect(img)
     for idx, ff in enumerate(af_faces):
-        res['faces'].append({
+        face_model = None
+        face_dict = {
             'idx': idx,
             'detector': detector_name,
             'pos': ff.face.pos,
@@ -66,7 +51,35 @@ def predict(filename, config=None, db_session=None):
             'colors': {
                 key: value.color for key, value in vars(ff).items()
                 if key in valid_color_attrs}
-        })
+        }
+        if db_session and c_model:
+            raise NotImplementedError
+        yield face_dict, face_model
+
+
+def predict(filename, config=None, db_session=None):
+    width, height = 96, 96
+    predict_method_name = 'moeflow'
+    pil_img = PIL.Image.open(filename)
+    cv2_img = cv2.imread(filename)
+    created = True
+    c_model = None
+
+    if db_session is not None:
+        c_model, created = models.add_image(db_session, filename, pil_img, IMAGE_DIR)
+        db_session.commit()
+
+    res = {
+        'filename': filename,
+        'pil_img': pil_img,
+        'cv2_img': cv2_img,
+        'c_model': c_model,
+        'faces': [],
+        'config': {'graph': None, 'label_lines': None}}
+    if config is not None:
+        res['config'].update(config)
+    # detect face with python anime_face
+    res['faces'] = list(get_faces(pil_img, db_session, c_model))
     # prepare graph and label_lines instance
     if not res['config']['graph'] and not res['config']['label_lines']:
         res['config']['graph'], res['config']['label_lines'] = \
@@ -75,7 +88,7 @@ def predict(filename, config=None, db_session=None):
     # predict each face
     label_lines = res['config']['label_lines']
     graph = res['config']['graph']
-    for idx, face in enumerate(res['faces']):
+    for idx, (face, face_model) in enumerate(res['faces']):
         pos = face['pos']
         crop_img = cv2_img[pos.y:pos.y+pos.height, pos.x:pos.x+pos.width]
         resized_img = cv2.resize(
