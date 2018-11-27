@@ -29,7 +29,7 @@ def test_predict(graph_and_label_lines):
     config = {'graph': graph, 'label_lines': label_lines}
     res = predict('screenshots/altered_2_characters.png', config)
     assert res['faces']
-    assert res['faces'][0]['colors']
+    assert res['faces'][0][0]['colors']
 
 
 def test_predict_with_db(graph_and_label_lines):
@@ -42,8 +42,8 @@ def test_predict_with_db(graph_and_label_lines):
     Session = sessionmaker(bind=engine)
     db_session = Session()
     models.Base.metadata.create_all(engine)
-    res = predict('screenshots/altered_2_characters.png', config, db_session)
-    assert res
+    with pytest.raises(NotImplementedError):
+        predict('screenshots/altered_2_characters.png', config, db_session)
 
 
 def test_get_faces():

@@ -54,7 +54,7 @@ def get_faces(img, db_session=None, c_model=None):
         }
         if db_session and c_model:
             raise NotImplementedError
-        yield face_dict, face_model
+        yield [face_dict, face_model]
 
 
 def predict(filename, config=None, db_session=None):
@@ -100,9 +100,9 @@ def predict(filename, config=None, db_session=None):
         with tempfile.NamedTemporaryFile(delete=False) as temp_ff:
             resized_path = temp_ff.name + '.jpg'
             cv2.imwrite(temp_ff.name + '.jpg', resized_img)
-        res['faces'][idx]['resized_path'] = temp_ff.name
+        res['faces'][idx][0]['resized_path'] = temp_ff.name
         predictions = classify_resized_face(resized_path, label_lines, graph)
-        res['faces'][idx]['predictions'] = [
+        res['faces'][idx][0]['predictions'] = [
             {'method': predict_method_name, 'value': x[0], 'confidence': x[1]}
             for x in predictions]
     return res
