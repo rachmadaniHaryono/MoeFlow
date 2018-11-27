@@ -2,6 +2,7 @@
 import hashlib
 import logging
 import os
+import tempfile
 import time
 
 import cv2
@@ -68,3 +69,19 @@ def get_hex_value(r, g, b):
         return max(0, min(x, 255))
 
     return "#{0:02x}{1:02x}{2:02x}".format(clamp(r), clamp(g), clamp(b))
+
+
+def get_resized_face_temp_file(face_dict, cv2_img):
+    width, height = 96, 96
+    pos = face_dict['pos']
+    crop_img = cv2_img[pos.y:pos.y+pos.height, pos.x:pos.x+pos.width]
+    resized_img = cv2.resize(
+        crop_img,
+        (width, height),
+        interpolation=cv2.INTER_AREA
+    )
+    resized_path = None
+    with tempfile.NamedTemporaryFile(delete=False) as temp_ff:
+        resized_path = temp_ff.name + '.jpg'
+        cv2.imwrite(temp_ff.name + '.jpg', resized_img)
+    return resized_path
