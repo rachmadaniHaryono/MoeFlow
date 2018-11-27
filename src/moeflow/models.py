@@ -91,8 +91,15 @@ class FacePrediction(BaseModel):
     __tablename__ = 'face_prediction'
     face_id = Column(Integer, ForeignKey('face.id'))
     face = relationship("Face", backref="predictions", foreign_keys=face_id)
+    tag_id = Column(Integer, ForeignKey('tag.id'))
+    tag = relationship("Tag", backref="face_predictions", foreign_keys=tag_id)
     method = Column(String)
     confidence = Column(Float)
+
+    def __repr__(self):
+        templ = 'FacePrediction(id={}, face_id={}, tag={}, method={}, confidence={})'
+        return templ.format(
+            self.id, self.face_id, repr(self.tag), self.method, self.confidence)
 
 
 class FaceComparisonStatus(enum.Enum):
@@ -125,6 +132,13 @@ class Tag(BaseModel):
     sibling_id = Column(Integer, ForeignKey('tag.id'))
     sibling = relationship(
         "Tag", backref="siblings", foreign_keys=sibling_id, remote_side=[id])
+
+    def __repr__(self):
+        return 'Tag(id={} {})'.format(
+            self.id,
+            '{}:{}'.format(self.namespace.value, self.value)
+            if self.namespace else self.value
+        )
 
 
 class Namespace(BaseModel):
