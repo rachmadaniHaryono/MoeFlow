@@ -1,5 +1,6 @@
 import enum
 import os
+import pathlib
 import shutil
 
 from appdirs import user_data_dir
@@ -20,7 +21,7 @@ Base = declarative_base()
 checksum_tags = Table(
     'checksum_tags', Base.metadata,
     Column('checksum_id', ForeignKey('checksum.id'), primary_key=True),
-    Column('tag_id', ForeignKey('checksum.id'), primary_key=True)
+    Column('tag_id', ForeignKey('tag.id'), primary_key=True)
 )
 checksum_faces = Table(
     'checksum_faces', Base.metadata,
@@ -28,7 +29,7 @@ checksum_faces = Table(
     Column('face_id', ForeignKey('face.id'), primary_key=True)
 )
 face_color_tags = Table(
-    'face_color_Tags', Base.metadata,
+    'face_color_tags', Base.metadata,
     Column('face_id', ForeignKey('face.id'), primary_key=True),
     Column('color_tag_id', ForeignKey('color_tag.id'), primary_key=True)
 )
@@ -56,31 +57,30 @@ class Checksum(BaseModel):
     trash = Column(Boolean, default=False)
     width = Column(Integer)
     height = Column(Integer)
-    tags = relationship('Tag', secondary=checksum_tags, back_populates='checksums')
+    tags = relationship('Tag', secondary=checksum_tags, backref='checksums')
 
 
 class Face(BaseModel):
     __tablename__ = 'face'
     checksum_id = Column(Integer, ForeignKey('checksum.id'))
-    checksum = relationship("Checksum", back_populates="faces", foreign_keys=checksum_id)
+    checksum = relationship("Checksum", backref="faces", foreign_keys=checksum_id)
     resized_checksum_id = Column(Integer, ForeignKey('checksum.id'))
     resized_checksum = relationship(
-        "Checksum", back_populates="faces", foreign_keys=resized_checksum_id)
+        "Checksum", backref="face_models", foreign_keys=resized_checksum_id)
     method = Column(String)
     pos_x = Column(Integer)
     pos_y = Column(Integer)
     pos_w = Column(Integer)
     pos_h = Column(Integer)
-    colors = relationship('ColorTag', secondary=face_color_tags, back_populates='faces')
-    tags = relationship('Tag', secondary=face_tags, back_populates='faces')
+    colors = relationship('ColorTag', secondary=face_color_tags, backref='faces')
+    tags = relationship('Tag', secondary=face_tags, backref='faces')
 
 
 class FacePrediction(BaseModel):
     __tablename__ = 'face_prediction'
     face_id = Column(Integer, ForeignKey('face.id'))
-    face = relationship("Face", back_populates="predictions", foreign_keys=face_id)
+    face = relationship("Face", backref="predictions", foreign_keys=face_id)
     method = Column(String)
-    tags = relationship('Tag', secondary=face_tags, back_populates='face_predictions')
     confidence = Column(Float)
 
 
@@ -94,10 +94,10 @@ class FaceComparison(BaseModel):
     __tablename__ = 'face_comparison'
     left_operand_id = Column(Integer, ForeignKey('face.id'))
     left_operand = relationship(
-        'Face', back_populates='face_comparisons', foreign_keys=left_operand_id)
+        'Face', backref='left_face_comparisons', foreign_keys=left_operand_id)
     right_operand_id = Column(Integer, ForeignKey('face.id'))
     right_operand = relationship(
-        'Face', back_populates='face_comparisons', foreign_keys=right_operand_id)
+        'Face', backref='right_face_comparisons', foreign_keys=right_operand_id)
     result = Column(Boolean, default=False)
     status = Column(ChoiceType(FaceComparisonStatus, impl=Integer()))
     method = Column(String)
@@ -105,13 +105,14 @@ class FaceComparison(BaseModel):
 
 class Tag(BaseModel):
     __tablename__ = 'tag'
+    id = Column(Integer, primary_key=True)
     value = Column(String)
     namespace_id = Column(Integer, ForeignKey('namespace.id'))
     namespace = relationship(
-        "Namespace", back_populates="tags", foreign_keys=namespace_id)
+        "Namespace", backref="tags", foreign_keys=namespace_id)
     parents = relationship("Tag", backref=backref('children', remote_side=[id]))
     sibling_id = Column(Integer, ForeignKey('tag.id'))
-    sibling = relationship("Tag", back_populates="siblings", foreign_keys=sibling_id)
+    sibling = relationship("Tag", backref="siblings", foreign_keys=sibling_id, remote_side=[id])
 
 
 class Namespace(BaseModel):
@@ -147,10 +148,11 @@ def add_image(db_session, filename, pil_image=None, image_dir=None):
     c_model.width, c_model.height = pil_image.size
     c_model.trash = False
     if image_dir is not None:
-        shutil.copyfile(
-            filename,
+        new_filename =  \
             os.path.join(
-                image_dir, checksum[:2],
-                '{}.{}'.format(c_model.value, c_model.ext)))
+                image_dir, checksum[:2], '{}.{}'.format(c_model.value, c_model.ext))
+        pathlib.Path(os.path.dirname(new_filename)).mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(filename, new_filename)
+            
     db_session.add(c_model)
     return c_model, created
