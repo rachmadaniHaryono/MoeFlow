@@ -26,7 +26,7 @@ def read_tensor_from_image_file(file_name, input_height=299, input_width=299,
     return result
 
 
-def classify_resized_face(file_name, label_lines, graph):
+def classify_resized_face(file_name, label_lines, graph, count=3):
     results = []
     logging.info('Processing classification')
     with tf.Session(graph=graph) as sess:
@@ -39,7 +39,7 @@ def classify_resized_face(file_name, label_lines, graph):
             {input_operation.outputs[0]: t}
         )
         # Sort to show labels of first prediction in order of confidence
-        top_k = predictions[0].argsort()[-3:][::-1]
+        top_k = predictions[0].argsort()[-count:][::-1]
 
         for node_id in top_k:
             human_string = label_lines[node_id]
