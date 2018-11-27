@@ -159,7 +159,10 @@ def add_image(db_session, filename, pil_image=None, image_dir=None):
     c_model, created = get_or_create(
         db_session, Checksum, value=checksum)
     if not created:
-        raise NotImplementedError
+        if pil_image is not None:
+            pass
+        else:
+            raise NotImplementedError
     c_model.ext = pil_image.format.lower()
     c_model.width, c_model.height = pil_image.size
     c_model.trash = False
