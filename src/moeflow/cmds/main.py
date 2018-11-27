@@ -33,7 +33,7 @@ app = Sanic(__name__)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 static_path = os.path.join(dir_path, '..', 'static')
 app.static('/static', static_path)
-app.static('/i', IMAGE_DIR)
+# app.static('/i', IMAGE_DIR, name='static_image')
 pathlib.Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
 
 ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
