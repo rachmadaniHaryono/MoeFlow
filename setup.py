@@ -14,12 +14,12 @@ requires = [
     'numpy==1.13.3',
     'opencv-python==3.4.3.18',
     'python-magic==0.4.13',
-    'sanic==0.6.0',
+    'sanic==0.8.3',
     'SQLAlchemy-Utils>=0.33.8',
     'SQLAlchemy>=1.2.14',
     'ujson==1.35',
     'uvloop==0.8.1',
-    'websockets==4.0.1',
+    'websockets>=5.0.1',
 ]
 
 console_scripts = [
