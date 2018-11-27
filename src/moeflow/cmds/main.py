@@ -155,6 +155,11 @@ def predict(filename, config=None, db_session=None):
                     face=face_model, tag=tag_m, method=predict_method_name,
                 )
                 fp_m.confidence = pp[1]
+                pil_r_img = PIL.Image.open(resized_path)
+                r_img_model, _ = models.add_image(
+                    db_session, resized_path, pil_r_img, IMAGE_DIR)
+                face_model.resized_checksum = r_img_model
+                db_session.add(r_img_model)
                 db_session.add(fp_m)
     return res
 
