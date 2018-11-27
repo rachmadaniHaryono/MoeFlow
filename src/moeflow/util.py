@@ -61,3 +61,10 @@ def sha256_checksum(filename, block_size=65536):
         for block in iter(lambda: f.read(block_size), b''):
             sha256.update(block)
     return sha256.hexdigest()
+
+
+def get_hex_value(r, g, b):
+    def clamp(x):
+        return max(0, min(x, 255))
+
+    return "#{0:02x}{1:02x}{2:02x}".format(clamp(r), clamp(g), clamp(b))

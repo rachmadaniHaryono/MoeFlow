@@ -21,6 +21,7 @@ from moeflow.face_detect import run_face_detection
 from moeflow.jinja2_env import render
 from moeflow.util import (
     cleanup_image_cache,
+    get_hex_value,
     resize_faces,
     resize_large_image,
     sha256_checksum,
@@ -63,8 +64,22 @@ def get_faces(img, db_session=None, c_model=None):
                     break
             #  update or create face_model
             if face_model:
-                # # update existing face
-                raise NotImplementedError
+                face_model.likelihood = ff.likelihood
+                # update color tags on face
+                # by removing existing color vlaue
+                c_tag_list = []
+                for color_m in face_model.color_tags:
+                    if color_m.value not in color_tags.values():
+                        c_tag_list.append(color_m)
+                for key, value in color_tags.items():
+                    color_m, _ = models.get_or_create(
+                        db_session, models.ColorTag,
+                        value=key, color_value=get_hex_value(value.r, value.g, value.b)
+                    )
+                    db_session.add(color_m)
+                    c_tag_list.append(color_m)
+                db_session.add(face_model)
+                face_model.color_tags = c_tag_list
             else:
                 create_a_new_face_model = True
         elif db_session and c_model:
@@ -75,14 +90,10 @@ def get_faces(img, db_session=None, c_model=None):
             for key, value in pos.items():
                 setattr(face_model, 'pos_{}'.format(key), value)
             for key, value in color_tags.items():
-                def clamp(x):
-                    return max(0, min(x, 255))
-                color_value = \
-                    "#{0:02x}{1:02x}{2:02x}".format(
-                        clamp(value.r), clamp(value.g), clamp(value.b))
-
                 color_m, _ = models.get_or_create(
-                    db_session, models.ColorTag, value=key, color_value=color_value)
+                    db_session, models.ColorTag,
+                    value=key, color_value=get_hex_value(value.r, value.g, value.b)
+                )
                 face_model.color_tags.append(color_m)
                 db_session.add(color_m)
             db_session.add(face_model)

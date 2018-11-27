@@ -77,3 +77,9 @@ def test_get_faces_with_db():
     assert res[0][1]
     assert res[0][1].color_tags
     db_session.commit()
+
+    #  get the same face with existing db
+    c_model2, created = models.add_image(db_session, filename, pil_image=img)
+    db_session.commit()
+    assert not created
+    assert c_model.id == c_model2.id
