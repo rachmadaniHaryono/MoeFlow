@@ -123,7 +123,8 @@ def predict(filename, config=None, db_session=None):
         res['config'].update(config)
     # detect face with python anime_face
     res['faces'] = list(get_faces(pil_img, db_session, c_model))
-    db_session.commit()
+    if db_session:
+        db_session.commit()
     # prepare graph and label_lines instance
     if not res['config']['graph'] and not res['config']['label_lines']:
         res['config']['graph'], res['config']['label_lines'] = \
