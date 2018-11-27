@@ -112,7 +112,8 @@ class Tag(BaseModel):
         "Namespace", backref="tags", foreign_keys=namespace_id)
     parents = relationship("Tag", backref=backref('children', remote_side=[id]))
     sibling_id = Column(Integer, ForeignKey('tag.id'))
-    sibling = relationship("Tag", backref="siblings", foreign_keys=sibling_id, remote_side=[id])
+    sibling = relationship(
+        "Tag", backref="siblings", foreign_keys=sibling_id, remote_side=[id])
 
 
 class Namespace(BaseModel):
@@ -153,6 +154,5 @@ def add_image(db_session, filename, pil_image=None, image_dir=None):
                 image_dir, checksum[:2], '{}.{}'.format(c_model.value, c_model.ext))
         pathlib.Path(os.path.dirname(new_filename)).mkdir(parents=True, exist_ok=True)
         shutil.copyfile(filename, new_filename)
-            
     db_session.add(c_model)
     return c_model, created
