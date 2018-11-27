@@ -43,8 +43,10 @@ def test_predict_with_db(graph_and_label_lines):
     Session = sessionmaker(bind=engine)
     db_session = Session()
     models.Base.metadata.create_all(engine)
-    with pytest.raises(NotImplementedError):
-        predict('screenshots/altered_2_characters.png', config, db_session)
+    res = predict('screenshots/altered_2_characters.png', config, db_session)
+    assert res
+    db_session.commit()
+    assert res['c_model'].faces[0].predictions
 
 
 def test_get_faces():

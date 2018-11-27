@@ -22,6 +22,7 @@ from moeflow.jinja2_env import render
 from moeflow.util import (
     cleanup_image_cache,
     get_hex_value,
+    get_resized_face_temp_file,
     resize_faces,
     resize_large_image,
     sha256_checksum,
@@ -101,7 +102,6 @@ def get_faces(img, db_session=None, c_model=None):
 
 
 def predict(filename, config=None, db_session=None):
-    width, height = 96, 96
     predict_method_name = 'moeflow'
     pil_img = PIL.Image.open(filename)
     cv2_img = cv2.imread(filename)
@@ -123,6 +123,7 @@ def predict(filename, config=None, db_session=None):
         res['config'].update(config)
     # detect face with python anime_face
     res['faces'] = list(get_faces(pil_img, db_session, c_model))
+    db_session.commit()
     # prepare graph and label_lines instance
     if not res['config']['graph'] and not res['config']['label_lines']:
         res['config']['graph'], res['config']['label_lines'] = \
@@ -131,23 +132,30 @@ def predict(filename, config=None, db_session=None):
     # predict each face
     label_lines = res['config']['label_lines']
     graph = res['config']['graph']
+
+    if db_session:
+        character_nmm, _ = models.get_or_create(
+            db_session, models.Namespace, value='character')
+    else:
+        character_nmm = None
     for idx, (face, face_model) in enumerate(res['faces']):
-        pos = face['pos']
-        crop_img = cv2_img[pos.y:pos.y+pos.height, pos.x:pos.x+pos.width]
-        resized_img = cv2.resize(
-            crop_img,
-            (width, height),
-            interpolation=cv2.INTER_AREA
-        )
-        resized_path = None
-        with tempfile.NamedTemporaryFile(delete=False) as temp_ff:
-            resized_path = temp_ff.name + '.jpg'
-            cv2.imwrite(temp_ff.name + '.jpg', resized_img)
-        res['faces'][idx][0]['resized_path'] = temp_ff.name
+        resized_path = get_resized_face_temp_file(face, cv2_img)
+        res['faces'][idx][0]['resized_path'] = resized_path
         predictions = classify_resized_face(resized_path, label_lines, graph)
         res['faces'][idx][0]['predictions'] = [
-            {'method': predict_method_name, 'value': x[0], 'confidence': x[1]}
-            for x in predictions]
+            {'method': predict_method_name, 'value': pp[0], 'confidence': pp[1]}
+            for pp in predictions
+        ]
+        if face_model:
+            for pp in predictions:
+                tag_m, _ = models.get_or_create(
+                    db_session, models.Tag, value=pp[0], namespace=character_nmm)
+                fp_m, _ = models.get_or_create(
+                    db_session, models.FacePrediction,
+                    face=face_model, tag=tag_m, method=predict_method_name,
+                )
+                fp_m.confidence = pp[1]
+                db_session.add(fp_m)
     return res
 
 
