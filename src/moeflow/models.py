@@ -1,11 +1,12 @@
-import shutil
+import enum
 import os
+import shutil
 
 from appdirs import user_data_dir
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy_utils import ColorType
+from sqlalchemy_utils import ColorType, ChoiceType
 from sqlalchemy_utils.models import Timestamp
 
 from moeflow.util import sha256_checksum
@@ -81,6 +82,25 @@ class FacePrediction(BaseModel):
     method = Column(String)
     tags = relationship('Tag', secondary=face_tags, back_populates='face_predictions')
     confidence = Column(Float)
+
+
+class FaceComparisonStatus(enum.Enum):
+    unknown = 0
+    valid = 1
+    invalid = 2
+
+
+class FaceComparison(BaseModel):
+    __tablename__ = 'face_comparison'
+    left_operand_id = Column(Integer, ForeignKey('face.id'))
+    left_operand = relationship(
+        'Face', back_populates='face_comparisons', foreign_keys=left_operand_id)
+    right_operand_id = Column(Integer, ForeignKey('face.id'))
+    right_operand = relationship(
+        'Face', back_populates='face_comparisons', foreign_keys=right_operand_id)
+    result = Column(Boolean, default=False)
+    status = Column(ChoiceType(FaceComparisonStatus, impl=Integer()))
+    method = Column(String)
 
 
 class Tag(BaseModel):
