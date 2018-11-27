@@ -81,7 +81,7 @@ def get_resized_face_temp_file(face_dict, cv2_img):
         interpolation=cv2.INTER_AREA
     )
     resized_path = None
-    with tempfile.NamedTemporaryFile(delete=False) as temp_ff:
-        resized_path = temp_ff.name + '.jpg'
-        cv2.imwrite(temp_ff.name + '.jpg', resized_img)
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_ff:
+        resized_path = temp_ff.name
+        cv2.imwrite(temp_ff.name, resized_img)
     return resized_path
