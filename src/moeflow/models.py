@@ -63,6 +63,19 @@ class Checksum(BaseModel):
     def filename(self):
         return os.path.join(self.value[:2], '{}.{}'.format(self.value, self.ext))
 
+    @property
+    def face_model_color_tags(self):
+        res = []
+        unique_list = []
+        if self.face_models:
+            for fm in self.face_models:
+                for c_tag in fm.color_tags:
+                    unique_set = (c_tag.value, c_tag.color_value.hex_l)
+                    if unique_set not in unique_list:
+                        res.append(c_tag)
+                        unique_list.append(unique_set)
+        return res
+
 
 class Face(BaseModel):
     __tablename__ = 'face'
