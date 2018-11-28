@@ -196,6 +196,13 @@ async def main_app(request):
     return response.html(render("main.html"))
 
 
+@app.route('/face')
+async def face_list(request):
+    db_session = scoped_session(sessionmaker(bind=app.engine))
+    c_models = db_session.query(models.Checksum).filter(models.Checksum.face_models.any()).all()  # NOQA
+    return response.html(render('face_list.html', url_for=app.url_for, c_models=c_models))
+
+
 @app.route("/hello_world")
 async def hello_world(request):
     return response.text("Hello world!")
