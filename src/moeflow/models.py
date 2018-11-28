@@ -59,6 +59,10 @@ class Checksum(BaseModel):
     height = Column(Integer)
     tags = relationship('Tag', secondary=checksum_tags, backref='checksums')
 
+    @property
+    def filename(self):
+        return os.path.join(self.value[:2], '{}.{}'.format(self.value, self.ext))
+
 
 class Face(BaseModel):
     __tablename__ = 'face'
