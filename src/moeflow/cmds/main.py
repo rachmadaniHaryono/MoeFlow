@@ -3,7 +3,6 @@
 import logging
 import os
 import pathlib
-import shutil
 import tempfile
 
 import animeface
@@ -13,19 +12,16 @@ import magic
 import PIL.Image
 import tensorflow as tf
 from sanic import Sanic, response
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from moeflow import models
 from moeflow.models import IMAGE_DIR
 from moeflow.classify import classify_resized_face
-from moeflow.face_detect import run_face_detection
 from moeflow.jinja2_env import render
 from moeflow.util import (
-    cleanup_image_cache,
     get_hex_value,
     get_resized_face_temp_file,
-    resize_faces,
-    resize_large_image,
-    sha256_checksum,
 )
 
 
@@ -33,7 +29,7 @@ app = Sanic(__name__)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 static_path = os.path.join(dir_path, '..', 'static')
 app.static('/static', static_path)
-# app.static('/i', IMAGE_DIR, name='static_image')
+app.static('/i', IMAGE_DIR, name='static_image')
 pathlib.Path(IMAGE_DIR).mkdir(parents=True, exist_ok=True)
 
 ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
@@ -186,55 +182,17 @@ async def main_app(request):
         if mime_type not in ALLOWED_MIMETYPE:
             return response.html(render("main.html"))
         # Scale down input image to ~800 px
-        image = resize_large_image(uploaded_image.body)
-        with tempfile.NamedTemporaryFile(mode="wb", suffix='.jpg') as input_jpg:
-            filename = input_jpg.name
-            logging.info("Input file is created at {}".format(filename))
-            cv2.imwrite(filename, image)
-            # Copy to image directory
-            csm = sha256_checksum(filename)
-            ori_name = csm + ".jpg"
-            ori_path = os.path.join(static_path, 'images', ori_name[:2], ori_name)
-            pathlib.Path(os.path.dirname(ori_path)).mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(filename, ori_path)
-            results = []
-            # Run face detection with animeface-2009
-            detected_faces = run_face_detection(filename)
-            # This operation will rewrite detected faces to 96 x 96 px
-            resize_faces(detected_faces)
-            # Classify with TensorFlow
-            if not detected_faces:  # Use overall image as default
-                detected_faces = [filename]
-            for face in detected_faces:
-                predictions = classify_resized_face(
-                    face,
-                    app.label_lines,
-                    app.graph
-                )
-                face_name = sha256_checksum(face) + ".jpg"
-                face_name_path = os.path.join(
-                    static_path, 'images', face_name[:2], face_name)
-                pathlib.Path(
-                    os.path.dirname(face_name_path)
-                ).mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(face, face_name_path)
-                results.append({
-                    "image_name": face_name,
-                    "prediction": predictions
-                })
-                logging.info(predictions)
-            # Cleanup
-            cleanup_image_cache(os.path.join(static_path, 'images'))
-            for faces in detected_faces:
-                if faces != filename:
-                    os.remove(faces)
-        return response.html(
-            render(
-                "main.html",
-                ori_name=ori_name,
-                results=results
-            )
-        )
+        suffix = '.jpeg' if mime_type == 'image/jpeg' else '.png'  # NOQA
+        with tempfile.NamedTemporaryFile(mode='wb', suffix=suffix, delete=False) as input_img:  # NOQA
+            with open(input_img.name, 'wb') as f:
+                f.write(uploaded_image.body)
+            db_session = scoped_session(sessionmaker(bind=app.engine))
+            config = {'graph': app.graph, 'label_lines': app.label_lines}
+            results = predict(input_img.name, db_session=db_session, config=config)
+            db_session.commit()
+            c_model = results['c_model']
+            return response.html(
+                render("main.html", c_model=c_model, url_for=app.url_for))
     return response.html(render("main.html"))
 
 
@@ -250,6 +208,12 @@ async def initialize(app, loop):
     model_path = os.path.join(os.sep, moeflow_path, "output_graph_2.pb")
     app.graph, app.label_lines = get_graph_and_label_lines(model_path, label_path)
     logging.info("MoeFlow model is now initialized!")
+
+    # init db
+    db_uri = 'sqlite:///{}'.format(os.path.join(models.DATA_DIR, 'moeflow.db'))
+    engine = create_engine(db_uri)
+    models.Base.metadata.create_all(engine)
+    app.engine = engine
 
 
 @click.command()

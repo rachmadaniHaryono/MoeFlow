@@ -33,12 +33,12 @@
                 </form>
 	    </div>
 
-            {% if ori_name %}
+            {% if c_model%}
 	    <hr>
             <div class="row">
                 <div class="col-md-6 order-md-1">
 	            <h4 class="mb-3">Input:</h4>
-              <img src="{{ url_path }}static/images/{{ori_name[:2]}}/{{ ori_name }}" style="max-height:500px;max-width:450px">
+              <img src="{{ url_for('static', filename=c_model.filename, name='static_image') }}" style="max-height:500px;max-width:450px">
                 </div>
 
                 <div class="col-md-6 order-md-2">
@@ -49,23 +49,23 @@
                             <th>Prediction (Top-3)</th>
                             <th>Confidence</th>
                         </tr>
-                        {% for result in results %}
-                        {% for prediction in result['prediction'] %}
+                        {% for face in c_model.faces %}
+                        {% for prediction in face.predictions %}
                         <tr>
                             {% if loop.index == 1 %}
                             <td rowspan=3>
-                              <img src="{{ url_path }}static/images/{{result['image_name'][:2]}}/{{ result['image_name'] }}"
+                              <img src="{{ url_for('static', filename=face.resized_checksum.filename, name='static_image') }}"
                               style="max-height:500px;max-width:300px">
                             </td>
                             {% endif %}
-                            <td>{{ prediction[0] }}</td>
+                            <td>{{ prediction.tag.value }}</td>
                             <td>
                               <div class="progress">
                                 <div class="progress-bar" role="progressbar"
-                                  style="width: {{ "%0.f"|format(prediction[1] * 100) }}%;"
-                                  aria-valuenow="{{ "%0.f"|format(prediction[1] * 100) }}"
+                                  style="width: {{ "%0.f"|format(prediction.confidence * 100) }}%;"
+                                  aria-valuenow="{{ "%0.f"|format(prediction.confidence * 100) }}"
                                   aria-valuemin="0" aria-valuemax="100">
-                                  {{ "%0.f"|format(prediction[1] * 100)}}
+                                  {{ "%0.f"|format(prediction.confidence * 100)}}
                                 </div>
                               </div>
                             </td>
