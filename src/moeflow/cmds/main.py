@@ -37,7 +37,6 @@ ALLOWED_MIMETYPE = ['image/jpeg', 'image/png']
 
 def get_faces(img, db_session=None, c_model=None):
     detector_name = 'python_animeface'
-    valid_color_attrs = ['skin', 'hair', 'left_eye', 'right_eye']
     create_a_new_face_model = False
     af_faces = animeface.detect(img)
     for ff in af_faces:
@@ -45,7 +44,7 @@ def get_faces(img, db_session=None, c_model=None):
         pos = vars(ff.face.pos)  # NOQA
         color_tags = {
             key: value.color for key, value in vars(ff).items()
-            if key in valid_color_attrs}
+            if hasattr(value, 'color')}
         face_dict = {
             'detector': detector_name,
             'pos': ff.face.pos,
