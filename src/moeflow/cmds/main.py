@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import colorsys
 import logging
+import math
 import os
 import pathlib
 import tempfile
@@ -198,7 +200,39 @@ async def main_app(request):
 @app.route('/face')
 async def face_list(request):
     db_session = scoped_session(sessionmaker(bind=app.engine))
-    c_models = db_session.query(models.Checksum).filter(models.Checksum.face_models.any()).all()  # NOQA
+    if True:
+        c_models = db_session.query(models.Checksum).filter(models.Checksum.face_models.any()).all()  # NOQA
+    else:
+        def step(r, g, b, repetitions=1):
+            lum = math.sqrt(.241 * r + .691 * g + .068 * b)
+            h, s, v = colorsys.rgb_to_hsv(r, g, b)
+            h2 = int(h * repetitions)
+            #  lum2 = int(lum * repetitions)  # NOQA
+            v2 = int(v * repetitions)
+
+            if h2 % 2 == 1:
+                v2 = repetitions - v2
+                lum = repetitions - lum
+
+            return (h2, lum, v2)
+        ct_ms = db_session.query(models.ColorTag).filter(
+            models.ColorTag.value == 'hair').filter(
+                models.Checksum.face_models.any()).all()
+
+        ct_ms = sorted(ct_ms, key=lambda x: step(
+            x.color_value.rgb[0]/255,
+            x.color_value.rgb[1]/255,
+            x.color_value.rgb[2]/255,
+            12
+        ))
+        c_models = []
+        f_models = []
+        list(map(lambda x: f_models.extend(x.faces), ct_ms))
+        for x in f_models:
+            if not c_models:
+                c_models.append(x.resized_checksum)
+            elif c_models[-1] != x.resized_checksum:
+                c_models.append(x.resized_checksum)
     return response.html(render('face_list.html', url_for=app.url_for, c_models=c_models))
 
 
