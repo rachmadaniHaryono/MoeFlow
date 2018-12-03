@@ -201,7 +201,9 @@ async def main_app(request):
 async def face_list(request):
     db_session = scoped_session(sessionmaker(bind=app.engine))
     if True:
-        c_models = db_session.query(models.Checksum).filter(models.Checksum.face_models.any()).all()  # NOQA
+        c_models = db_session.query(models.Checksum).filter(
+            models.Checksum.face_models.any()).order_by(
+                models.Checksum.created.desc()).all()
     else:
         def step(r, g, b, repetitions=1):
             lum = math.sqrt(.241 * r + .691 * g + .068 * b)
