@@ -194,7 +194,7 @@ async def main_app(request):
             c_model = results['c_model']
             return response.html(
                 render("main.html", c_model=c_model, url_for=app.url_for))
-    return response.html(render("main.html"))
+    return response.html(render("main.html", url_for=app.url_for))
 
 
 @app.route('/face')

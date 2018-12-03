@@ -17,6 +17,18 @@
     </head>
     <body class="bg-light">
       <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <a class="navbar-brand" href="{{url_for('main_app')}}">MoeFlow</a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active"> <a class="nav-link" href="{{url_for('main_app')}}">Home</a> </li>
+              <li class="nav-item"> <a class="nav-link" href="{{url_for('face_list')}}">Face</a> </li>
+            </ul>
+          </div>
+        </nav>
         <div class="py-5 text-center"> <h2>MoeFlow: Anime Characters Recognition (Alpha Ver.)</h2> </div>
         <div class="row text-center">
             {% for c_model in c_models %}
