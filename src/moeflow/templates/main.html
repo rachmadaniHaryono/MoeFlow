@@ -1,99 +1,64 @@
-<!doctype html>
-<html lang="en">
-    <head>
-       <!-- Required meta tags -->
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+{% extends 'base.html' %}
 
-        <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-        <link rel="stylesheet" type="text/css" href="{{ url_path }}static/main.css">
-        <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon"> 
+{% block body_title %}
+  <h2>MoeFlow: Anime Characters Recognition (Alpha Ver.)</h2>
+  <p class="lead">For more information,
+    see <a href="https://github.com/freedomofkeima/MoeFlow" target="_blank">freedomofkeima/MoeFlow</a> and
+    <a href="https://github.com/freedomofkeima/transfer-learning-anime" target="_blank">freedomofkeima/transfer-learning-anime</a> at Github.</p>
+  <p class="lead">List of 100 supported characters can be accessed
+    <a href="https://github.com/freedomofkeima/MoeFlow/blob/master/100_class_traning_note.md#list-of-characters" target="_blank">here</a>.</p>
+  <p class="lead">Note: This operation will be very slow (around 15 seconds) if there are a lot of characters in a single image!</p>
+{% endblock %}
 
-        <title>MoeFlow: Anime Characters Recognition</title>
-    </head>
-    <body class="bg-light">
-      <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-          <a class="navbar-brand" href="{{url_for('main_app')}}">MoeFlow</a>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-              <li class="nav-item active"> <a class="nav-link" href="{{url_for('main_app')}}">Home</a> </li>
-              <li class="nav-item"> <a class="nav-link" href="{{url_for('face_list')}}">Face</a> </li>
-            </ul>
-          </div>
-        </nav>
-	    <div class="py-5 text-center">
-                <h2>MoeFlow: Anime Characters Recognition (Alpha Ver.)</h2>
-                <p class="lead">For more information, see <a href="https://github.com/freedomofkeima/MoeFlow" target="_blank">freedomofkeima/MoeFlow</a> and <a href="https://github.com/freedomofkeima/transfer-learning-anime" target="_blank">freedomofkeima/transfer-learning-anime</a> at Github.</p>
-		<p class="lead">List of 100 supported characters can be accessed <a href="https://github.com/freedomofkeima/MoeFlow/blob/master/100_class_traning_note.md#list-of-characters" target="_blank">here</a>.</p>
-                <p class="lead">Note: This operation will be very slow (around 15 seconds) if there are a lot of characters in a single image!</p>
-            </div>
+{% block body %}
+  <div class="col-md-8">
+    <h4 class="mb-3">Upload Image</h4>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="col-md-6 md-3">
+        <input type="file" name="uploaded_image" accept="image/*">
+        <small class="text-muted">Accepted mime-type: image/jpeg, image/png</small>
+      </div>
+      <hr class="mb-4">
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Upload</button>
+    </form>
+  </div>
 
-	    <div class="col-md-8">
-                <h4 class="mb-3">Upload Image</h4>
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="col-md-6 md-3">
-                        <input type="file" name="uploaded_image" accept="image/*">
-                        <small class="text-muted">Accepted mime-type: image/jpeg, image/png</small>
-                    </div>
-		    <hr class="mb-4">
-                    <button class="btn btn-primary btn-lg btn-block" type="submit">Upload</button>
-                </form>
-	    </div>
-
-            {% if c_model%}
-	    <hr>
-            <div class="row">
-                <div class="col-md-6 order-md-1">
-	            <h4 class="mb-3">Input:</h4>
-              <img src="{{ url_for('static', filename=c_model.filename, name='static_image') }}" style="max-height:500px;max-width:450px">
+  {% if c_model%}
+  <hr>
+  <div class="row">
+    <div class="col-md-6 order-md-1">
+      <h4 class="mb-3">Input:</h4>
+      <img src="{{ url_for('static', filename=c_model.filename, name='static_image') }}" style="max-height:500px;max-width:450px">
+    </div>
+    <div class="col-md-6 order-md-2">
+      <h4 class="mb-3">Output:</h4>
+      <table class="table">
+          <tr> <th>Character</th> <th>Prediction (Top-3)</th> <th>Confidence</th> </tr>
+          {% for face in c_model.faces %}
+            {% for prediction in face.predictions %}
+            <tr>
+              {% if loop.index == 1 %}
+                <td rowspan=3>
+                  <img src="{{ url_for('static', filename=face.resized_checksum.filename, name='static_image') }}"
+                  style="max-height:500px;max-width:300px">
+                </td>
+              {% endif %}
+              <td>{{ prediction.tag.value }}</td>
+              <td>
+                <div class="progress">
+                  <div class="progress-bar" role="progressbar"
+                    style="width: {{ "%0.f"|format(prediction.confidence * 100) }}%;"
+                    aria-valuenow="{{ "%0.f"|format(prediction.confidence * 100) }}"
+                    aria-valuemin="0" aria-valuemax="100">
+                    {{ "%0.f"|format(prediction.confidence * 100)}}
+                  </div>
                 </div>
-
-                <div class="col-md-6 order-md-2">
-                    <h4 class="mb-3">Output:</h4>
-                    <table class="table">
-                        <tr>
-                            <th>Character</th>
-                            <th>Prediction (Top-3)</th>
-                            <th>Confidence</th>
-                        </tr>
-                        {% for face in c_model.faces %}
-                        {% for prediction in face.predictions %}
-                        <tr>
-                            {% if loop.index == 1 %}
-                            <td rowspan=3>
-                              <img src="{{ url_for('static', filename=face.resized_checksum.filename, name='static_image') }}"
-                              style="max-height:500px;max-width:300px">
-                            </td>
-                            {% endif %}
-                            <td>{{ prediction.tag.value }}</td>
-                            <td>
-                              <div class="progress">
-                                <div class="progress-bar" role="progressbar"
-                                  style="width: {{ "%0.f"|format(prediction.confidence * 100) }}%;"
-                                  aria-valuenow="{{ "%0.f"|format(prediction.confidence * 100) }}"
-                                  aria-valuemin="0" aria-valuemax="100">
-                                  {{ "%0.f"|format(prediction.confidence * 100)}}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        {% endfor %}
-                        {% endfor %}
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-            <footer class="my-5 pt-5 text-muted text-center text-small">
-                <p class="mb-1">Freedomofkeima Zone, 2017 - 2018.</p>
-            </footer>
-        </div>
-        <!-- Optional JavaScript -->
-        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-    </body>
-</html>
-
+              </td>
+            </tr>
+            {% endfor %}
+          {% endfor %}
+      </table>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}

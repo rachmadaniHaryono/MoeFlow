@@ -21,7 +21,11 @@
           </ul>
         </div>
       </nav>
-      <div class="py-5 text-center"> <h2>MoeFlow: Anime Characters Recognition (Alpha Ver.)</h2> </div>
+      <div class="py-5 text-center">
+        {% block body_title%}
+          <h2>MoeFlow: Anime Characters Recognition (Alpha Ver.)</h2>
+        {% endblock %}
+      </div>
       {% block body %}
       {% endblock %}
       <footer class="my-5 pt-5 text-muted text-center text-small"> <p class="mb-1">Freedomofkeima Zone, 2017 - 2018.</p> </footer>
